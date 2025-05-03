@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Image Text Overlay Tool</title>
+  <title>form of alborz boton</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -10,7 +10,7 @@
       padding: 30px;
       color: #333;
     }
-    input[type="text"], button {
+    input, button {
       padding: 10px;
       border-radius: 6px;
       border: 1px solid #ccc;
@@ -32,28 +32,35 @@
       border: 1px solid #ccc;
     }
     .text-input {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 15px;
-      background: #fff;
-      padding: 15px;
-      border-radius: 6px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.05);
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
 
-  <h2>Live Text on Image</h2>
+  <h2>Image Text Overlay with Position in HTML</h2>
 
   <div id="textInputs">
     <div class="text-input">
-      <input type="text" class="textValue" placeholder="Enter text">
+    <label>
+	Base Value (x):
+      <input type="text" class="textValue" data-x="150" data-y="160" data-role="base" placeholder="Enter a number (x)">
+    </label>
+    </div>
+    <div class="text-input">
+      <label>
+	base value 2:
+      <input type="text" class="textValue" data-x="50" data-y="160" data-role="xdiv2" placeholder="Auto: x / 2" readonly>
+      </label>
+    </div>
+    <div class="text-input">
+      <label>
+	text number 3:
+      <input type="text" class="textValue" data-x="50" data-y="220" placeholder="Enter any text">
+      </label>
     </div>
   </div>
 
-  <button onclick="addTextInput()">Add More Text</button>
   <button onclick="downloadImage()">Download Image</button>
 
   <canvas id="canvas"></canvas>
@@ -61,55 +68,45 @@
   <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const imageURL = 'https://raw.githubusercontent.com/sarvari1378/Auto_FORMS/refs/heads/main/Picturs/Alborz_BOTON.png'; // SET YOUR IMAGE URL HERE
-    let uploadedImage = new Image();
-    let imageWidth = 0;
-    let imageHeight = 0;
+    const imageURL = 'https://raw.githubusercontent.com/sarvari1378/Auto_FORMS/refs/heads/main/Picturs/Alborz_BOTON.png';
+    const uploadedImage = new Image();
 
-    // Predefined positions for each text box (X, Y)
-    const positions = [
-      { x: 50, y: 100 }, // Position for first text input
-      { x: 50, y: 160 }, // Second input, if added
-      { x: 50, y: 220 }  // Third input, etc.
-    ];
-
-    // Load fixed image
-    uploadedImage.crossOrigin = "Anonymous"; // To avoid CORS if needed
+    uploadedImage.crossOrigin = "Anonymous";
     uploadedImage.onload = function () {
-      imageWidth = uploadedImage.width;
-      imageHeight = uploadedImage.height;
-      canvas.width = imageWidth;
-      canvas.height = imageHeight;
+      canvas.width = uploadedImage.width;
+      canvas.height = uploadedImage.height;
       drawImage();
     };
     uploadedImage.src = imageURL;
 
-    function addTextInput() {
-      const div = document.createElement('div');
-      div.className = 'text-input';
-      div.innerHTML = `<input type="text" class="textValue" placeholder="Enter text">`;
-      document.getElementById('textInputs').appendChild(div);
-      div.querySelector('.textValue').addEventListener('input', drawImage);
-    }
-
-    // Attach live listener to first input
     document.querySelectorAll('.textValue').forEach(input => {
-      input.addEventListener('input', drawImage);
+      input.addEventListener('input', () => {
+        if (input.dataset.role === 'base') {
+          const xValue = parseFloat(input.value);
+          const dependentInput = document.querySelector('.textValue[data-role="xdiv2"]');
+          if (!isNaN(xValue)) {
+            dependentInput.value = (xValue / 2).toFixed(2);
+          } else {
+            dependentInput.value = '';
+          }
+        }
+        drawImage(); // Always update canvas
+      });
     });
 
     function drawImage() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(uploadedImage, 0, 0, imageWidth, imageHeight);
+      ctx.drawImage(uploadedImage, 0, 0, canvas.width, canvas.height);
 
-      const inputs = document.querySelectorAll('.textValue');
       ctx.fillStyle = 'black';
       ctx.font = '30px Arial';
 
-      inputs.forEach((input, index) => {
+      document.querySelectorAll('.textValue').forEach(input => {
         const text = input.value;
-        const pos = positions[index] || { x: 50, y: 50 + index * 60 }; // fallback position
-        if (text.trim()) {
-          ctx.fillText(text, pos.x, pos.y);
+        const x = parseFloat(input.dataset.x);
+        const y = parseFloat(input.dataset.y);
+        if (text !== '' && !isNaN(x) && !isNaN(y)) {
+          ctx.fillText(text, x, y);
         }
       });
     }
