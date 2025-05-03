@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Image Text Editor</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      padding: 30px;
+      color: #333;
+    }
+    input[type="file"], input[type="text"], input[type="number"], button {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 10px 0;
+    }
+    .text-input {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.05);
+    }
+    canvas {
+      max-width: 90%;
+      height: auto;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Upload Image and Add Text</h2>
+
+  <input type="file" id="imageUpload" accept="image/*"><br><br>
+
+  <div id="textInputs">
+    <div class="text-input">
+      <input type="text" class="textValue" placeholder="Enter text">
+      X: <input type="number" class="textX" value="50">
+      Y: <input type="number" class="textY" value="50">
+    </div>
+  </div>
+
+  <button onclick="addTextInput()">Add More Text</button>
+  <button onclick="downloadImage()">Download Image</button>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let uploadedImage = new Image();
+    let imageWidth = 0;
+    let imageHeight = 0;
+
+    document.getElementById('imageUpload').addEventListener('change', function (e) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        uploadedImage.onload = function () {
+          imageWidth = uploadedImage.width;
+          imageHeight = uploadedImage.height;
+          canvas.width = imageWidth;
+          canvas.height = imageHeight;
+          drawImage();
+        };
+        uploadedImage.src = event.target.result;
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    });
+
+    function addTextInput() {
+      const div = document.createElement('div');
+      div.className = 'text-input';
+      div.innerHTML = `
+        <input type="text" class="textValue" placeholder="Enter text">
+        X: <input type="number" class="textX" value="50">
+        Y: <input type="number" class="textY" value="50">
+      `;
+      document.getElementById('textInputs').appendChild(div);
+      addLiveUpdateListeners(div);
+    }
+
+    function addLiveUpdateListeners(container) {
+      container.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', drawImage);
+      });
+
+      // Enable click-drag for X/Y inputs
+      ['textX', 'textY'].forEach(className => {
+        const input = container.querySelector(`.${className}`);
+        let startX, startVal;
+
+        input.addEventListener('mousedown', e => {
+          startX = e.clientX;
+          startVal = parseInt(input.value);
+          const onMouseMove = e => {
+            const diff = e.clientX - startX;
+            input.value = startVal + diff;
+            drawImage();
+          };
+          const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+      });
+    }
+
+    // Attach live listeners to the first text-input
+    document.querySelectorAll('.text-input').forEach(addLiveUpdateListeners);
+
+    function drawImage() {
+      if (!uploadedImage.src) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(uploadedImage, 0, 0, imageWidth, imageHeight);
+
+      const inputs = document.querySelectorAll('.text-input');
+      ctx.fillStyle = 'black';
+      ctx.font = '30px Arial';
+
+      inputs.forEach(input => {
+        const text = input.querySelector('.textValue').value;
+        const x = parseInt(input.querySelector('.textX').value);
+        const y = parseInt(input.querySelector('.textY').value);
+        if (text.trim()) ctx.fillText(text, x, y);
+      });
+    }
+
+    function downloadImage() {
+      const link = document.createElement('a');
+      link.download = 'image_with_text.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+  </script>
+
+</body>
+</html>
